@@ -2,7 +2,7 @@
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { X, Calendar, Clock, Users } from 'lucide-react';
+import { X, Calendar, Clock, Users, Truck } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 
 interface Task {
