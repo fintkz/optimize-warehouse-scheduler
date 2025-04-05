@@ -17,6 +17,8 @@ interface ScheduleResponse {
     outbound_docks: any[];
   };
   summary: any;
+  shift_start: string | null;
+  shift_end: string | null;
 }
 
 
