@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button"; // For Retry button
 import { WaveScheduleTab } from './WaveScheduleTab'; 
 import { DockScheduleTab } from './DockScheduleTab'; 
 import { LaborTab } from './LaborTab'; 
+import MetricsCards from './MetricsCards';
 
 // Define known shift times (should match backend/schemas)
 const SHIFT_TIMES_FRONTEND: Record<string, [string, string]> = {
@@ -96,20 +97,24 @@ export function OperationsPlanning() {
     }
 
 
-    // --- Render Component ---
     return (
         <div className="operations-planning mt-6"> 
-            {/* Prompt Box Placeholder */}
-            <div className="mb-6 p-4 border rounded-md bg-card text-card-foreground shadow-sm">
-                 <textarea 
+            {/* Pass summary data AND derived worker count to MetricsCards */}
+            <MetricsCards 
+                 summary={summary} 
+                 workerCount={scheduleRequest?.workers?.length ?? null} 
+            />
+
+            {/* Prompt Box Placeholder (as before) */}
+            <div className="mt-6 mb-6 p-4 border rounded-md bg-card text-card-foreground shadow-sm"> 
+                <textarea 
                     className="w-full p-2 border rounded mb-2 text-sm bg-background focus:ring-primary focus:border-primary" 
                     placeholder="Enter prompt (e.g., 'show available docks') - Placeholder / Future Feature" 
                     rows={2}
-                    disabled // Disable for now
+                    disabled 
                  />
                  <div className="flex justify-between items-center">
                       <div className="text-xs text-muted-foreground mt-2 space-x-3">
-                          {/* Make these links/dropdowns later */}
                           <span>Example Prompts</span> 
                           <span>|</span>
                           <span>Syntax Help</span> 
@@ -126,40 +131,36 @@ export function OperationsPlanning() {
             {/* --- Tabs --- */}
             <Tabs defaultValue="waves" className="w-full"> 
                 <TabsList className="grid w-full grid-cols-3 mb-4">
-                    {/* Ensure consistent naming */}
                     <TabsTrigger value="labor">Labor</TabsTrigger> 
                     <TabsTrigger value="waves">Waves</TabsTrigger>
                     <TabsTrigger value="docks">Docks</TabsTrigger>
                 </TabsList>
                 
-                {/* Labor Tab Content */}
+                {/* Labor Tab Content - Passing necessary props */}
                 <TabsContent value="labor" className="mt-4">
                      <LaborTab 
                          scheduleRequest={scheduleRequest} 
                          summary={summary}
-                         inboundSchedule={inboundSchedule}
+                         inboundSchedule={inboundSchedule} 
                          outboundSchedule={outboundSchedule}
                          waveSchedule={waveSchedule}
-                         shiftStart={derivedShiftStart} // Pass derived Date objects
+                         shiftStart={derivedShiftStart} 
                          shiftEnd={derivedShiftEnd}
                      />
                 </TabsContent>
 
-                {/* Waves Tab Content */}
+                {/* Waves Tab Content - Passing necessary props */}
                 <TabsContent value="waves" className="mt-4">
                      <WaveScheduleTab waveData={waveSchedule} />
                 </TabsContent>
 
-                {/* Docks Tab Content */}
+                {/* Docks Tab Content - Passing necessary props */}
                 <TabsContent value="docks" className="mt-4">
                      <DockScheduleTab dockData={dockSchedule} />
-                     {/* TODO: Pass inbound/outbound schedules here if needed for lookups */}
+                     {/* Pass schedules if needed later for lookups */}
                      {/* <DockScheduleTab dockData={dockSchedule} inboundSchedule={inboundSchedule} outboundSchedule={outboundSchedule} /> */}
                 </TabsContent>
             </Tabs>
         </div>
     );
-}
-
-// Export if not default export or used elsewhere
-// export default OperationsPlanning; 
+} // End of OperationsPlanning component
