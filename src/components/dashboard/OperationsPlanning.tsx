@@ -156,9 +156,13 @@ export function OperationsPlanning() {
 
                 {/* Docks Tab Content - Passing necessary props */}
                 <TabsContent value="docks" className="mt-4">
-                     <DockScheduleTab dockData={dockSchedule} />
-                     {/* Pass schedules if needed later for lookups */}
-                     {/* <DockScheduleTab dockData={dockSchedule} inboundSchedule={inboundSchedule} outboundSchedule={outboundSchedule} /> */}
+                     <DockScheduleTab 
+                         dockData={dockSchedule} 
+                         inboundSchedule={inboundSchedule} 
+                         outboundSchedule={outboundSchedule}
+                         shiftStart={derivedShiftStart}
+                         shiftEnd={derivedShiftEnd}
+                     />
                 </TabsContent>
             </Tabs>
         </div>
