@@ -7,7 +7,7 @@ import { useState, useEffect } from 'react';
 
 // Define the structure matching your Pydantic ScheduleResponse (can be simplified initially)
 // It's better to define these properly based on your schemas.py
-interface ScheduleResponse {
+export interface ScheduleResponse {
   schedule_request: any;
   inbound_schedule: any[];
   outbound_schedule: any[];

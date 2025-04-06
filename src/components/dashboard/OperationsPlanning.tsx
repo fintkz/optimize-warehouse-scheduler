@@ -1,6 +1,5 @@
 // src/components/dashboard/OperationsPlanning.tsx
 import React from 'react';
-import { useScheduleData } from '../../hooks/useScheduleData'; 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"; // Adjust path if needed
 import { Button } from "@/components/ui/button"; // For Retry button
 
@@ -8,7 +7,7 @@ import { Button } from "@/components/ui/button"; // For Retry button
 import { WaveScheduleTab } from './WaveScheduleTab'; 
 import { DockScheduleTab } from './DockScheduleTab'; 
 import { LaborTab } from './LaborTab'; 
-import MetricsCards from './MetricsCards';
+import { ScheduleResponse } from '@/hooks/useScheduleData'; // Import the main response type
 
 // Define known shift times (should match backend/schemas)
 const SHIFT_TIMES_FRONTEND: Record<string, [string, string]> = {
@@ -17,8 +16,20 @@ const SHIFT_TIMES_FRONTEND: Record<string, [string, string]> = {
     'C': ['23:00:00', '07:00:00'] 
 };
 
-export function OperationsPlanning() {
-    const { data: scheduleData, isLoading, error, refetch } = useScheduleData();
+interface OperationsPlanningProps {
+    scheduleData: ScheduleResponse | null;
+    isLoading: boolean;
+    error: string | null;
+    refetch: () => void; // Function to trigger refetch from parent
+}
+
+
+export function OperationsPlanning({ 
+    scheduleData, 
+    isLoading, 
+    error, 
+    refetch 
+}: OperationsPlanningProps) {
 
     // --- Loading State ---
     if (isLoading) {
@@ -97,17 +108,14 @@ export function OperationsPlanning() {
     }
 
 
+    // --- Component Return (JSX Tree) ---
     return (
-        <div className="operations-planning mt-6"> 
-            {/* Pass summary data AND derived worker count to MetricsCards */}
-            <MetricsCards 
-                 summary={summary} 
-                 workerCount={scheduleRequest?.workers?.length ?? null} 
-            />
-
-            {/* Prompt Box Placeholder (as before) */}
-            <div className="mt-6 mb-6 p-4 border rounded-md bg-card text-card-foreground shadow-sm"> 
-                <textarea 
+        // Removed mt-6, assuming parent (Dashboard.tsx) handles spacing
+        <div className="operations-planning"> 
+            
+            {/* Prompt Box Placeholder (Keep or remove based on preference) */}
+            <div className="mb-6 p-4 border rounded-md bg-card text-card-foreground shadow-sm"> 
+                 <textarea 
                     className="w-full p-2 border rounded mb-2 text-sm bg-background focus:ring-primary focus:border-primary" 
                     placeholder="Enter prompt (e.g., 'show available docks') - Placeholder / Future Feature" 
                     rows={2}
@@ -136,7 +144,7 @@ export function OperationsPlanning() {
                     <TabsTrigger value="docks">Docks</TabsTrigger>
                 </TabsList>
                 
-                {/* Labor Tab Content - Passing necessary props */}
+                {/* Labor Tab Content */}
                 <TabsContent value="labor" className="mt-4">
                      <LaborTab 
                          scheduleRequest={scheduleRequest} 
@@ -149,20 +157,20 @@ export function OperationsPlanning() {
                      />
                 </TabsContent>
 
-                {/* Waves Tab Content - Passing necessary props */}
+                {/* Waves Tab Content */}
                 <TabsContent value="waves" className="mt-4">
                      <WaveScheduleTab waveData={waveSchedule} />
                 </TabsContent>
 
-                {/* Docks Tab Content - Passing necessary props */}
+                {/* Docks Tab Content */}
                 <TabsContent value="docks" className="mt-4">
                      <DockScheduleTab 
                          dockData={dockSchedule} 
-                         inboundSchedule={inboundSchedule} 
-                         outboundSchedule={outboundSchedule}
-                         shiftStart={derivedShiftStart}
-                         shiftEnd={derivedShiftEnd}
-                     />
+                         inboundSchedule={inboundSchedule}  
+                         outboundSchedule={outboundSchedule} 
+                         shiftStart={derivedShiftStart} 
+                         shiftEnd={derivedShiftEnd} 
+                    />
                 </TabsContent>
             </Tabs>
         </div>

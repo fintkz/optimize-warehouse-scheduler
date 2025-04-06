@@ -9,6 +9,7 @@ import { parseISO } from 'date-fns';
 import { format } from 'date-fns'; 
 import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from "@/components/ui/table";
 import { Progress } from "@/components/ui/progress";
+import { DockDetailModal } from './DockDetailModal'; 
 
 // --- Interfaces --- 
 interface DockAssignment {
@@ -176,6 +177,19 @@ export function DockScheduleTab({
     shiftEnd 
 }: DockScheduleTabProps) {
 
+    // --- Create Lookup Maps (Memoized) ---
+    const inboundTruckMap = useMemo(() => {
+        const map = new Map<string, InboundTruckInfo>();
+        inboundSchedule.forEach(truck => { if(truck?.truck_id) map.set(truck.truck_id, truck); });
+        return map;
+    }, [inboundSchedule]);
+
+    const outboundTruckMap = useMemo(() => {
+        const map = new Map<string, OutboundTruckInfo>();
+        outboundSchedule.forEach(truck => { if(truck?.truck_id) map.set(truck.truck_id, truck); });
+        return map;
+    }, [outboundSchedule]);
+
     // --- Calculate Shift Duration ---
     const shiftDurationMinutes = useMemo(() => {
         if (!shiftStart || !shiftEnd || shiftEnd <= shiftStart) return null;
@@ -241,23 +255,37 @@ export function DockScheduleTab({
     
     // --- States for Filtering/Searching ---
     const [searchTerm, setSearchTerm] = useState('');
-    // Add other filter states here (e.g., selectedStatus, selectedType)
+    const [selectedType, setSelectedType] = useState<'all' | 'inbound' | 'outbound'>('all'); // State for type filter
+    // const [utilizationFilter, setUtilizationFilter] = useState('all'); // Example state for util filter
+    const [selectedDockInfo, setSelectedDockInfo] = useState<CalculatedDockInfo | null>(null); // State for modal
 
     // --- Filter Docks for Display ---
     const filteredDocks = useMemo(() => {
-        // Filter based on calculatedDockInfoList now
         return calculatedDockInfoList.filter(dock => {
             const searchLower = searchTerm.toLowerCase();
-            // Check dock ID
-            if (dock.dock_id.toLowerCase().includes(searchLower)) return true;
-            // Maybe search assignment truck IDs if needed later
-            // if (dock.assignments.some(a => a.truck_id?.toLowerCase().includes(searchLower))) return true;
             
-            // TODO: Add checks for other filters 
-            
-            return !searchLower; // Show all if search is empty
+            // Type Filter
+            if (selectedType !== 'all' && dock.type !== selectedType) {
+                return false;
+            }
+
+            // Search Filter (Dock ID or Assigned Truck ID)
+            let searchMatch = false;
+            if (!searchLower) {
+                searchMatch = true; // No search term means match
+            } else {
+                 searchMatch = dock.dock_id.toLowerCase().includes(searchLower) ||
+                               dock.assignments.some(a => a.truck_id?.toLowerCase().includes(searchLower));
+            }
+            if (!searchMatch) return false;
+
+            // TODO: Add Utilization Filter Logic if implementing
+            // if (utilizationFilter === '>80' && (dock.utilizationPercent ?? 0) <= 80) return false;
+            // if (utilizationFilter === '<20' && (dock.utilizationPercent ?? 0) >= 20) return false;
+
+            return true; // Include if all filters pass
         });
-    }, [calculatedDockInfoList, searchTerm /*, other filter states */ ]);
+    }, [calculatedDockInfoList, searchTerm, selectedType /*, utilizationFilter */ ]);
 
     // --- Calculate Summary Cards Data ---
     const summaryStats = useMemo(() => {
@@ -286,35 +314,60 @@ export function DockScheduleTab({
     // Ensure counts add up (adjust available if needed, though should be correct now)
     // availableCount = totalPositions - occupiedCount - reservedCount; 
 
+    // --- Modal Handlers ---
+    const handleDockClick = (dockInfo: CalculatedDockInfo) => {
+        setSelectedDockInfo(dockInfo);
+    };
 
+    const handleCloseModal = () => {
+        setSelectedDockInfo(null);
+    };
+
+    // --- Component Return (JSX Tree) ---
     return (
-        <div className="space-y-4">
+        <div className="space-y-4 relative"> {/* Ensure relative positioning if modal is absolutely positioned */}
             {/* Summary Cards - Updated for Planning View */}
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3 text-center text-xs md:text-sm">
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 lg:grid-cols-6 gap-3 text-center text-xs md:text-sm">
                  <Card className="p-3"><CardTitle className="text-lg">{summaryStats.totalDockCount}</CardTitle><CardContent className="p-0 mt-1 text-muted-foreground">Total Docks</CardContent></Card>
                  <Card className="p-3"><CardTitle className="text-lg">{summaryStats.inboundAssignments}</CardTitle><CardContent className="p-0 mt-1 text-muted-foreground">Inbound Tasks</CardContent></Card>
                  <Card className="p-3"><CardTitle className="text-lg">{summaryStats.outboundAssignments}</CardTitle><CardContent className="p-0 mt-1 text-muted-foreground">Outbound Tasks</CardContent></Card>
                  <Card className="p-3"><CardTitle className="text-lg">{summaryStats.totalAssignments}</CardTitle><CardContent className="p-0 mt-1 text-muted-foreground">Total Assignments</CardContent></Card>
                  <Card className="p-3"><CardTitle className="text-lg">{summaryStats.avgUtilization ?? 'N/A'}%</CardTitle><CardContent className="p-0 mt-1 text-muted-foreground">Avg Dock Util.</CardContent></Card>
-                 {/* <Card className="p-3"><CardTitle className="text-lg">~{Math.round(summaryStats.totalBusyMinutes / 60)} hr</CardTitle><CardContent className="p-0 mt-1 text-muted-foreground">Total Busy Time</CardContent></Card> */}
+                 <Card className="p-3"><CardTitle className="text-lg">~{Math.round(summaryStats.totalBusyMinutes / 60)} hr</CardTitle><CardContent className="p-0 mt-1 text-muted-foreground">Total Busy Time</CardContent></Card>
             </div>
 
-             {/* Filters Section (Keep placeholders) */}
+             {/* Filters Section (Updated Selects) */}
             <div className="flex flex-wrap gap-2 p-3 border rounded-md bg-card items-center">
                  <div className="relative">
                      <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                      <Input 
-                         type="search" placeholder="Search dock ID..." 
+                         type="search" placeholder="Search dock or truck ID..." 
                          className="h-9 text-sm pl-8 w-full max-w-xs"
                          value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)}
                      />
                  </div>
-                 <Select> <SelectTrigger className="h-9 text-sm w-[150px]"><SelectValue placeholder="All Types" /></SelectTrigger><SelectContent><SelectItem value="inbound">Inbound</SelectItem><SelectItem value="outbound">Outbound</SelectItem></SelectContent></Select>
-                 <Select> <SelectTrigger className="h-9 text-sm w-[150px]"><SelectValue placeholder="Utilization" /></SelectTrigger><SelectContent> {/* e.g., >80%, <20% */} </SelectContent></Select>
+                 {/* Type Filter Select */}
+                 <Select value={selectedType} onValueChange={(value: 'all' | 'inbound' | 'outbound') => setSelectedType(value)}> 
+                     <SelectTrigger className="h-9 text-sm w-[150px]"><SelectValue placeholder="All Types" /></SelectTrigger>
+                     <SelectContent> 
+                        <SelectItem value="all">All Types</SelectItem>
+                        <SelectItem value="inbound">Inbound</SelectItem>
+                        <SelectItem value="outbound">Outbound</SelectItem>
+                     </SelectContent>
+                 </Select>
+                 {/* Placeholder Utilization Filter */}
+                 <Select /* value={utilizationFilter} onValueChange={setUtilizationFilter} */ > 
+                     <SelectTrigger className="h-9 text-sm w-[150px]" disabled><SelectValue placeholder="Utilization Filter" /></SelectTrigger> {/* Disabled for now */}
+                     <SelectContent> 
+                         <SelectItem value="all">All Utilization</SelectItem>
+                         {/* <SelectItem value=">80">High (>80%)</SelectItem> */}
+                         {/* <SelectItem value="<20">Low (<20%)</SelectItem> */}
+                    </SelectContent>
+                 </Select>
                  {/* Add sort buttons later */}
             </div>
 
-            {/* Dock List - Render Table/List View */}
+            {/* Dock List Table (Make Rows Clickable) */}
             <div className="border rounded-md">
                 <Table>
                     <TableHeader>
@@ -324,36 +377,34 @@ export function DockScheduleTab({
                             <TableHead className="w-[150px] text-center">Utilization</TableHead>
                             <TableHead className="w-[150px] text-center">Assignments</TableHead>
                             <TableHead className="w-[150px] text-center">Total Busy Time</TableHead>
-                            <TableHead className="w-[50px]"></TableHead> {/* For Action/Details Button */}
+                            {/* Removed explicit action header */}
                         </TableRow>
                     </TableHeader>
                     <TableBody>
                         {filteredDocks.length > 0 ? filteredDocks.map(dock => (
-                             <TableRow key={dock.dock_id} className="hover:bg-muted/50">
+                             <TableRow 
+                                 key={dock.dock_id} 
+                                 className="hover:bg-muted/50 cursor-pointer" // Add cursor-pointer
+                                 onClick={() => handleDockClick(dock)} // Add onClick handler to the ROW
+                                >
                                  <TableCell className="font-medium flex items-center"><Anchor className="h-4 w-4 mr-2 opacity-50"/>{dock.dock_id}</TableCell>
                                  <TableCell>
-                                     <Badge variant={dock.type === 'inbound' ? 'default' : 'secondary'}>{dock.type}</Badge>
+                                     {/* Using text instead of Badge for simplicity now, can add back */}
+                                      <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${dock.type === 'inbound' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300' : 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300'}`}>
+                                         {dock.type.charAt(0).toUpperCase() + dock.type.slice(1)}
+                                     </span>
                                  </TableCell>
-                                 <TableCell className="text-center">
+                                 <TableCell className="text-center text-sm">
                                      {dock.utilizationPercent !== null ? `${dock.utilizationPercent}%` : 'N/A'}
-                                     <Progress value={dock.utilizationPercent ?? 0} className="h-1.5 mt-1"/>
+                                     {/* Optional: Mini progress bar inline */}
+                                     {/* <Progress value={dock.utilizationPercent ?? 0} className="h-1 mt-1 w-16 mx-auto"/> */}
                                  </TableCell>
-                                 <TableCell className="text-center">{dock.assignmentCount}</TableCell>
-                                 <TableCell className="text-center">{dock.totalBusyMinutes} min</TableCell>
-                                 <TableCell className="text-right">
-                                     <Button 
-                                         variant="ghost" 
-                                         size="sm" 
-                                         className="h-7 px-2"
-                                         onClick={() => alert(`Details for ${dock.dock_id}:\n${JSON.stringify(dock.assignments, null, 2)}`)} // Placeholder Action
-                                        >
-                                         Details
-                                     </Button>
-                                 </TableCell>
+                                 <TableCell className="text-center text-sm">{dock.assignmentCount}</TableCell>
+                                 <TableCell className="text-center text-sm">{dock.totalBusyMinutes} min</TableCell>
                              </TableRow>
                          )) : (
                             <TableRow>
-                                <TableCell colSpan={6} className="h-24 text-center text-muted-foreground">
+                                <TableCell colSpan={5} className="h-24 text-center text-muted-foreground">
                                     {calculatedDockInfoList.length === 0 ? "No docks scheduled for use." : "No docks match filters."}
                                 </TableCell>
                             </TableRow>
@@ -361,8 +412,17 @@ export function DockScheduleTab({
                     </TableBody>
                 </Table>
             </div>
-            {/* Modal Placeholder for Dock Details */}
-            {/* {selectedDockId && <DockDetailModal dockInfo={...} onClose={...}/>} */}
+
+            {/* Conditionally Render Modal */}
+            {selectedDockInfo && (
+                <DockDetailModal 
+                    dockInfo={selectedDockInfo} 
+                    onClose={handleCloseModal} 
+                    // Pass truck lookup maps needed inside modal
+                    inboundTruckMap={inboundTruckMap} 
+                    outboundTruckMap={outboundTruckMap}
+                />
+            )}
         </div>
     );
 }
