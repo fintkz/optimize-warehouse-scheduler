@@ -8,9 +8,7 @@ import { OperationsPlanning } from '@/components/dashboard/OperationsPlanning';
 import MetricsCards from '@/components/dashboard/MetricsCards'; 
 import { ScheduleResponse } from '@/hooks/useScheduleData'; // Adjust path if needed
 import { PREDEFINED_SCENARIOS, DEFAULT_SCENARIO_ID } from '@/config/scenarios'; // Adjust path if needed
-
-// const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3003/api/v1/schedule';
-const API_URL = 'https://web-production-713b0.up.railway.app/api/v1/schedule';
+import API_URL from '@/config/apiUrl';
 
 const Dashboard = () => {
   

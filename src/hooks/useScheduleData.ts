@@ -1,5 +1,6 @@
 // src/hooks/useScheduleData.ts
 import { useState, useEffect } from 'react';
+import API_URL from '@/config/apiUrl';
 // Assuming you have defined your response schema mirroring the Pydantic models
 // You might need to generate these or define them manually based on schemas.py
 // For now, we'll use 'any' and refine later with proper types.
@@ -22,8 +23,6 @@ export interface ScheduleResponse {
 }
 
 
-const API_URL = 'https://web-production-713b0.up.railway.app/api/v1/schedule'; // Your backend API URL
-// const API_URL = 'http://localhost:3003/api/v1/schedule'; // Your backend API URL
 export function useScheduleData() {
   const [data, setData] = useState<ScheduleResponse | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
