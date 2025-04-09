@@ -22,8 +22,8 @@ export interface ScheduleResponse {
 }
 
 
-// const API_URL = 'https://web-production-713b0.up.railway.app/api/v1/schedule'; // Your backend API URL
-const API_URL = 'http://localhost:3003/api/v1/schedule'; // Your backend API URL
+const API_URL = 'https://web-production-713b0.up.railway.app/api/v1/schedule'; // Your backend API URL
+// const API_URL = 'http://localhost:3003/api/v1/schedule'; // Your backend API URL
 export function useScheduleData() {
   const [data, setData] = useState<ScheduleResponse | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
